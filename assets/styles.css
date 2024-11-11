@@ -1,0 +1,385 @@
+/* Body styles for the football field background */
+
+body {
+  font-family: 'Verdana', sans-serif;
+  color: black;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('football_field.webp'); /* Replace with your image path */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: 0.5; /* This makes the background image 50% transparent */
+  z-index: -1; /* Keep the image behind other content */
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.5); /* White overlay with 50% transparency */
+  z-index: -1;
+}
+
+
+/* Styling for the main container */
+.container {
+  background-color: rgba(255, 255, 255, 0.85);  /* Semi-transparent white background */
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);  /* Adds a shadow for depth */
+  max-width: 1200px;
+  margin: 0 auto;  /* Centers the content */
+  margin-top: 20px;  /* Adds some spacing from the top */
+  margin-bottom: 20px;  /* Adds spacing from the bottom */
+}
+
+/* Styling for individual game rows */
+.game-row {
+    transition: box-shadow 0.3s ease-in-out;
+    background-color: rgba(255, 255, 255, 1); /* Light background with transparency */
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px; /* Rounded corners */
+}
+
+/* Hover effect for game rows */
+.game-row:hover {
+  background-color: rgba(255, 255, 255, 0.8);  /* Subtle hover effect */
+}
+
+/* Default button style to display gradient */
+button.dash-bootstrap {
+  background: linear-gradient(90deg, var(--team-away-color), var(--team-home-color)) !important;
+  color: black !important;
+  padding: 10px 10px !important;
+  text-align: left !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3); /* Adds shadow for 3D effect */
+  border-radius: 8px; /* Rounded corners */
+  transition: box-shadow 0.7s ease, background-color 0.7s ease !important;
+  border: none !important;
+}
+
+/* Hover state to switch to plain color */
+button.dash-bootstrap:hover {
+  background-color: rgba(255, 255, 255, 1) !important;
+  color: black !important;
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.5); /* Enhanced shadow on hover */
+}
+
+/* CSS class for consistent section styling */
+.section-container {
+    padding: 20px;          /* Internal spacing within the section */
+    margin: 10px 0;         /* Vertical spacing between sections */
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background for contrast */
+    border-radius: 8px;     /* Rounded corners for a card-like effect */
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+/* Footer styling for last updated time */
+footer {
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  margin-top: 20px;
+}
+
+/* Ensuring any headers are styled properly */
+h1  {
+  color: black;  /* White color to stand out on green background */
+  margin: 0 0 10px;
+}
+
+
+/* Ensure container is responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+    max-width: 90%;
+  }
+
+  .game-row {
+    padding: 10px 0;
+  }
+}
+/* Base styling for 3D nav buttons */
+.nav-link-custom {
+  color: black;
+  font-weight: bold;
+  padding: 10px 20px;
+  margin-right: 15px;
+  text-align: center;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.3); /* Transparent white background when inactive */
+  transition: all 0.3s ease;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* 3D shadow */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover effect to enhance 3D look */
+.nav-link-custom:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom styling for the dropdown */
+.custom-dropdown .Select-control {
+    border: none !important;
+    background-color: rgba(255, 255, 255, 0.9) !important; /* Slightly more opaque for better readability */
+    border-radius: 8px !important;
+    width: 300px; /* Adjust width if needed */
+    padding: 5px 10px;
+    text-align: center;
+    color: #1E3A5F; /* Text color */
+}
+
+/* Center text within the dropdown */
+.custom-dropdown .Select-placeholder,
+.custom-dropdown .Select-value {
+    font-size: 18px;
+    color: #1E3A5F;
+    text-align: center;
+}
+
+/* Additional padding for dropdown toggle */
+.custom-dropdown .Select-arrow {
+    margin-left: 10px;
+}
+
+/* Remove focus outline for a cleaner look */
+.custom-dropdown .Select-control:focus {
+    outline: none !important;
+}
+
+/* Overall standings header */
+.standings-header {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  background-color: #1e3a5f;
+  border-radius: 12px;
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.3);
+  margin-bottom: 20px;
+}
+
+/* Division section container */
+.division-container {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  margin: 15px 10px;
+  transition: transform 0.3s ease;
+}
+
+.division-container:hover {
+  transform: scale(1.02); /* Subtle zoom effect */
+}
+
+/* Table header styling for columns */
+.table-header {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #ddd;
+  text-transform: uppercase;
+}
+
+/* Team rows */
+.team-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 10px;
+  transition: background 0.3s ease, transform 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.team-row:hover {
+  background: rgba(230, 230, 250, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Team logos */
+.team-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+/* Team name styling */
+.team-name {
+  font-weight: bold;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+/* Team record and statistics styling */
+.team-record {
+  margin-left: auto;
+  font-size: 16px;
+  color: #555;
+  font-weight: 500;
+}
+
+/* Specific color coding for division leaders or other statuses */
+.leader {
+  color: #1b5e20; /* Dark green for leaders */
+}
+
+.low-rank {
+  color: #d32f2f; /* Dark red for lower-ranked teams */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .division-container {
+    padding: 15px;
+  }
+
+  .team-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .team-name, .team-record {
+    font-size: 15px;
+  }
+
+  .team-logo {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Common styling for scoring play rows */
+body .section-container .scoring-play {
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Specific styling for away plays */
+body .section-container .scoring-play.away-play {
+    flex-direction: row;
+}
+body .section-container .scoring-play.away-play .play-text {
+    text-align: left;
+    margin-right: auto;
+}
+
+body .section-container .scoring-play.away-play .play-score {
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Specific styling for home plays */
+body .section-container .scoring-play.home-play {
+    flex-direction: row-reverse;
+}
+
+body .section-container .scoring-play.home-play .play-text {
+    text-align: right;
+    margin-left: auto;
+}
+
+body .section-container .scoring-play.home-play .play-score {
+    text-align: right;
+    font-weight: bold;
+}
+
+/* Logo container */
+body .section-container .play-logo-container {
+    width: 30px;
+    margin: 0 10px;
+}
+
+/* Style for the main roster table */
+.roster-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for table headers */
+.roster-table th {
+    background-color: #003f5c;
+    color: white;
+    font-size: 18px;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #1E3A5F;
+}
+
+/* Styling for group headers (e.g., Offense, Defense) */
+.roster-group-header {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    background-color: lightblue;
+}
+
+/* Styling for position subheadings (e.g., Running Back) */
+.roster-position-header {
+    background-color: #f1f3f4;
+    font-size: 20px;
+    font-style: italic;
+    color: #333;
+    padding: 8px;
+}
+
+/* Alternate row colors */
+.roster-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.roster-table tr:nth-child(odd) {
+    background-color: white;
+}
+
+/* Styling for table data cells */
+.roster-table td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Hover effect for table rows */
+.roster-table tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Style for player photo */
+.player-photo {
+    margin-right: 10px;
+    border-radius: 50%;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Styling for team and player details */
