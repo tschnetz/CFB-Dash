@@ -7,3 +7,4 @@ cfbd~=4.5.2
 python-dotenv~=1.0.1
 diskcache~=5.6.3
 Flask-Caching~=2.3.0
+gunicorn~=20.1.0
