@@ -129,7 +129,7 @@ def register_callbacks(app):
         [Input('week-selector', 'value')]
     )
     def display_static_items(selected_week):
-        print("Displaying static items")
+        # print("Displaying static items")
         current_games = create_display(selected_week)
         # Convert DataFrame to list of dictionaries
         games_info = []

@@ -3,6 +3,7 @@ from datetime import datetime
 import pytz
 from api import fetch_data_from_api
 from config import SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL, RECORDS_URL, MEDIA_URL, YEAR
+from cache_config import cache
 
 
 def get_scoreboard():
@@ -11,6 +12,7 @@ def get_scoreboard():
     return response if response is not None else []
 
 
+@cache.memoize(timeout=3600)
 def get_logos_colors():
     with open('data/team_info.json', 'r') as file:
         data_dict = json.load(file)
@@ -29,24 +31,28 @@ def get_logos_colors():
     return colors_logos
 
 
+@cache.memoize(timeout=3600)
 def get_schedule():
     querystring = {"year": YEAR}
     response = fetch_data_from_api(SCHEDULE_URL, query_params=querystring)
     return response if response is not None else []
 
 
+@cache.memoize(timeout=3600)
 def get_games(week):
     querystring = {"year": YEAR, "week": week, "division": "fbs"}
     response = fetch_data_from_api(GAMES_URL, query_params=querystring)
     return response if response is not None else []
 
 
+@cache.memoize(timeout=3600)
 def get_records():
     querystring = {"year": YEAR}
     response = fetch_data_from_api(RECORDS_URL, query_params=querystring)
     return response if response is not None else []
 
 
+@cache.memoize(timeout=1800)
 def get_lines(week):
     querystring = {"year": YEAR, "week": week}
     response = fetch_data_from_api(ODDS_URL, query_params=querystring)
@@ -65,6 +71,7 @@ def get_lines(week):
     return []
 
 
+@cache.memoize(timeout=3600)
 def get_media(week):
     querystring = {"year": YEAR, "week": week}
     response = fetch_data_from_api(MEDIA_URL, query_params=querystring)
@@ -76,6 +83,7 @@ def get_media(week):
     return []
 
 
+@cache.memoize(timeout=3600)
 def create_records(records):
     return [
         {
@@ -90,6 +98,7 @@ def create_records(records):
 
 
 # Merges games data with logos and colors
+@cache.memoize(timeout=3600)
 def add_logos(games):
     team_info = get_logos_colors()
     # Filter out the faulty Charlotte logo entry
@@ -153,6 +162,7 @@ def create_scoreboard():
     ]
 
 # Cleans and formats games data
+@cache.memoize(timeout=3600)
 def clean_games(games):
     cleaned_games = []
     for game in games:
