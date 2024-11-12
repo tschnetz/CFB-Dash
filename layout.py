@@ -16,8 +16,8 @@ main_layout = dbc.Container([
     dbc.Card([
         dbc.CardBody(
             html.Div([
-                html.Img(src="assets/NCAA_logo.webp", height="100px", style={"marginRight": "15px"}),
-                html.H1("CFB Games", style={
+                html.Img(src="assets/CFB Logo.png", height="100px", style={"marginRight": "15px"}),
+                html.H1("2024/25 College Football Games", style={
                     "display": "inline-block",
                     "verticalAlign": "middle",
                     "color": "white",
