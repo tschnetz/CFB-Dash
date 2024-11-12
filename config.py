@@ -19,3 +19,4 @@ ODDS_URL = "https://api.collegefootballdata.com/lines"
 RECORDS_URL = f'https://api.collegefootballdata.com/records'
 SCHEDULE_URL = "https://api.collegefootballdata.com/calendar"
 SCOREBOARD_URL = "https://api.collegefootballdata.com/scoreboard"
+TEAMSTATS_URL = "https://api.collegefootballdata.com/stats/season"

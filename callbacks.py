@@ -1,14 +1,17 @@
+import json
+
 import dash
-from dash import html, Input, Output, MATCH, State
+from dash import html, Input, Output, MATCH, State, callback_context
 import dash_bootstrap_components as dbc
 from datetime import datetime, date
-from utils import create_scoreboard, get_schedule, get_games, clean_games, get_media, create_records, get_records, add_logos, get_lines
+from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
+                   create_records, get_records, add_logos, get_lines, get_team_season_stats,
+                   per_game, create_comparison_row)
 
 
 initial_api_call_returned_events = True
 
 def register_callbacks(app):
-    from datetime import datetime, date
 
     @app.callback(
         Output('week-selector', 'options'),
@@ -212,6 +215,7 @@ def register_callbacks(app):
                     value=game_id,
                 )
             )
+            games_info.append(html.Div(id={'type': 'matchup', 'index': game_id}, children=[]))
             games_info.append(html.Hr())
 
         return games_info, True
@@ -229,7 +233,7 @@ def register_callbacks(app):
             [Input('scores-data', 'data')],
             [State({'type': 'game-button', 'index': MATCH}, 'index')],
     )
-    def display_dynamic_game_info(scores_data, game_id):
+    def display_dynamic_items(scores_data, game_id):
         game_data = next((game for game in scores_data if game['game_id'] == game_id), None)
 
         if not game_data:
@@ -297,4 +301,89 @@ def register_callbacks(app):
         except Exception as e:
             print(f"Error updating game data: {e}")
             return dash.no_update, dash.no_update, n_intervals
+
+
+    @app.callback(
+        Output({'type': 'matchup', 'index': dash.dependencies.ALL}, 'children'),
+        [Input({'type': 'game-button', 'index': dash.dependencies.ALL}, 'n_clicks')],
+        [State('games-data', 'data'),
+         State({'type': 'game-button', 'index': dash.dependencies.ALL}, 'id')]
+    )
+    def display_game_matchup(n_clicks_list, games_data, button_ids):
+        outputs = [[]] * len(n_clicks_list)
+        ctx = callback_context
+        if not ctx.triggered:
+            return outputs
+
+        triggered_button = ctx.triggered[0]['prop_id'].split('.')[0]
+        game_id = json.loads(triggered_button)['index']
+        triggered_button_index = next(i for i, btn_id in enumerate(button_ids) if btn_id['index'] == game_id)
+
+        if n_clicks_list[triggered_button_index] % 2 == 1:
+            game_info = next((game for game in games_data if game['id'] == game_id), None)
+            if not game_info:
+                return outputs
+
+            home_team = game_info['home_team']
+            away_team = game_info['away_team']
+
+            games_played_home = game_info['home_total_wins'] + game_info['home_total_losses']
+            games_played_away = game_info['away_total_wins'] + game_info['away_total_losses']
+
+            home_stats_list = get_team_season_stats(home_team)
+            away_stats_list = get_team_season_stats(away_team)
+
+            home_stats = {item['statName']: per_game(item['statValue'], games_played_home) for item in home_stats_list}
+            away_stats = {item['statName']: per_game(item['statValue'], games_played_away) for item in away_stats_list}
+
+            home_color = game_info['home_team_color']
+            away_color = game_info['away_team_color']
+
+            layout = html.Div([
+                # Offense Section
+                html.Div([
+                    html.H3("Offense (Per Game)", style={"textAlign": "center", "marginBottom": "10px", "fontSize": "14px", "fontWeight": "bold"}),
+                    create_comparison_row("totalYards", "Total Yards", home_stats.get('totalYards', 0),
+                                          away_stats.get('totalYards', 0), home_color, away_color),
+                    create_comparison_row("netPassingYards", "Passing Yards", home_stats.get('netPassingYards', 0),
+                                          away_stats.get('netPassingYards', 0), home_color, away_color),
+                    create_comparison_row("rushingYards", "Rushing Yards", home_stats.get('rushingYards', 0),
+                                          away_stats.get('rushingYards', 0), home_color, away_color),
+                    create_comparison_row("passingTDs", "Passing TDs", home_stats.get('passingTDs', 0),
+                                          away_stats.get('passingTDs', 0), home_color, away_color),
+                    create_comparison_row("rushingTDs", "Rushing TDs", home_stats.get('rushingTDs', 0),
+                                          away_stats.get('rushingTDs', 0), home_color, away_color),
+                    create_comparison_row("thirdDownEff", "3rd Down %", home_stats.get('thirdDownEff', 0),
+                                          away_stats.get('thirdDownEff', 0), home_color, away_color),
+
+                ], style={"marginBottom": "20px"}),
+
+                # Defense Section
+                html.Div([
+                    html.H3("Defense (Per Game)", style={"textAlign": "center",
+                                                         "marginBottom": "10px",
+                                                         "fontSize": "14px",
+                                                         "fontWeight": "bold"}),
+                    create_comparison_row("sacks", "Sacks", home_stats.get('sacks', 0), away_stats.get('sacks', 0),
+                                          home_color, away_color),
+                    create_comparison_row("tackles", "Tackles", home_stats.get('tackles', 0),
+                                          away_stats.get('tackles', 0), home_color, away_color),
+                    create_comparison_row("turnovers", "Turnovers", home_stats.get('turnovers', 0),
+                                          away_stats.get('turnovers', 0), home_color, away_color),
+                    create_comparison_row("interceptions", "Interceptions", home_stats.get('interceptions', 0),
+                                          away_stats.get('interceptions', 0), home_color, away_color),
+                    create_comparison_row("fumblesRecovered", "Fumbles Rec.",
+                                          home_stats.get('fumblesRecovered', 0), away_stats.get('fumblesRecovered', 0),
+                                          home_color, away_color),
+                ], style={"marginBottom": "20px"})
+            ], style={
+                "backgroundColor": "rgba(255, 255, 255, 0.8)",  # White background with 80% opacity
+                "borderRadius": "8px",  # Optional: rounded corners
+                "padding": "15px",  # Optional: padding for spacing
+                "boxShadow": "0px 4px 8px rgba(0, 0, 0, 0.2)"  # Optional: shadow for better visibility
+                }
+            )
+            outputs[triggered_button_index] = layout
+
+        return outputs
 

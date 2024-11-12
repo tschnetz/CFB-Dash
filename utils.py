@@ -1,9 +1,15 @@
 import json
 from datetime import datetime
 import pytz
+import plotly.graph_objs as go
+from dash import html, dcc
 from api import fetch_data_from_api
-from config import SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL, RECORDS_URL, MEDIA_URL, YEAR
+from config import SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL, RECORDS_URL, MEDIA_URL, TEAMSTATS_URL,YEAR
 from cache_config import cache
+
+
+def per_game(stat, games_played):
+    return stat / games_played if games_played else 0
 
 
 def get_scoreboard():
@@ -81,6 +87,12 @@ def get_media(week):
             consolidated_media.setdefault(item['id'], []).append(item['outlet'])
         return [{'id': k, 'outlet': ', '.join(v)} for k, v in consolidated_media.items()]
     return []
+
+
+def get_team_season_stats(team):
+    querystring = {"year": YEAR, "team": team}
+    response = fetch_data_from_api(TEAMSTATS_URL, query_params=querystring)
+    return response if response is not None else []
 
 
 @cache.memoize(timeout=3600)
@@ -183,3 +195,49 @@ def clean_games(games):
         }
         cleaned_games.append(cleaned_game)
     return cleaned_games
+
+
+# Improved function to create labeled comparison rows
+def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color):
+    total_value = home_value + away_value
+
+    # Calculate each team's percentage of the total
+    if total_value > 0:
+        home_percentage = (home_value / total_value) * 100
+        away_percentage = (away_value / total_value) * 100
+    else:
+        # If both values are zero, split the bar 50/50
+        home_percentage = 50
+        away_percentage = 50
+
+    # Start with the away team's color and percentage, followed by the home team's
+    return html.Div([
+        html.Div(description, style={"width": "150px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),  # Stat label
+        html.Span(f"{away_value:.1f}", style={"color": away_color, "width": "50px", "textAlign": "right", "fontSize": "12px", "padding": "5px"}),
+        dcc.Graph(
+            figure=go.Figure(
+                data=[
+                    go.Bar(
+                        x=[away_percentage], orientation='h', marker_color=away_color, showlegend=False,
+                        name=f"{away_value:.1f}"
+                    ),
+                    go.Bar(
+                        x=[home_percentage], orientation='h', marker_color=home_color, showlegend=False,
+                        name=f"{home_value:.1f}"
+                    )
+                ],
+                layout=go.Layout(
+                    height=15,
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    xaxis=dict(visible=False, range=[0, 100]),
+                    yaxis=dict(visible=False),
+                    barmode='stack'  # Stack the bars to show proportional segments
+                )
+            ),
+            config={'displayModeBar': False},
+            style={'height': '15px', 'width': '100%'}
+        ),
+        html.Span(f"{home_value:.1f}",
+                  style={"color": home_color, "width": "50px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "5px"}),
+        html.Div(description, style={"width": "150px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})  # Right-side Stat label
+], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
