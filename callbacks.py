@@ -47,7 +47,9 @@ def register_callbacks(app):
         return week_options, selected_value
 
 
-    @app.callback(Output('games-data', 'data'), Input('selected-week', 'data'))
+    @app.callback(Output('games-data', 'data'),
+                  Input('selected-week', 'data')
+    )
     def create_display(week):
         # Fetch and process the scoreboard data
         # print(f"Creating display for week {week}")
@@ -226,7 +228,7 @@ def register_callbacks(app):
             ],
             [Input('scores-data', 'data')],
             [State({'type': 'game-button', 'index': MATCH}, 'index')],
-        )
+    )
     def display_dynamic_game_info(scores_data, game_id):
         game_data = next((game for game in scores_data if game['game_id'] == game_id), None)
 
@@ -249,6 +251,7 @@ def register_callbacks(app):
 
         return home_score, away_score, quarter_time_display, home_team_extra_info, away_team_extra_info, game_status
 
+
     @app.callback(
         Output('scores-data', 'data'),
         Output('in-progress-flag', 'data', allow_duplicate=True),
@@ -258,9 +261,13 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def update_game_data(n_intervals, init_complete, prev_scores_data):
+        global initial_api_call_returned_events
+
         if not init_complete:
-            print("Not initialized yet.")
             return dash.no_update, dash.no_update, n_intervals
+
+        if initial_api_call_returned_events is False:
+            return dash.no_update, False, n_intervals
 
         try:
             games_data = create_scoreboard()  # Ensure this returns a list of games with all fields
