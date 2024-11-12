@@ -176,7 +176,7 @@ def register_callbacks(app):
                                 html.H5(quarter_time_display, id={'type': 'quarter-time', 'index': game_id},
                                         style={'fontWeight': 'bold'}),
                                 html.H6(game['spread']) if game['spread'] else "",
-                                html.P(game['start_date'], style={'margin': '0', 'padding': '0'}),
+                                html.P(f"{game['day_of_week']}, {game['start_date']}", style={'margin': '0', 'padding': '0'}),
                                 html.P(f"{game['outlet']}",
                                        style={'margin': '0', 'padding': '0'}),
                             ], style={'textAlign': 'center'}),
