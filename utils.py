@@ -105,10 +105,40 @@ def get_media(week):
     return []
 
 
-def get_team_season_stats(team):
+def get_team_offense_stats(team):
     querystring = {"year": YEAR, "team": team}
     response = fetch_data_from_api(TEAMSTATS_URL, query_params=querystring)
     return response if response is not None else []
+
+
+def get_team_defense_stats(team):
+    def to_numeric(value):
+        try:
+            if '.' in str(value):
+                return float(value)
+            return int(value)
+        except (ValueError, TypeError):
+            return 0
+
+    with open('data/defense_stats.json', 'r') as file:
+        data = json.load(file)
+
+    # Find the team's stats in the data
+    team_data = next((entry for entry in data if entry['id'] == team), None)
+    if team_data is None:
+        return {}  # Return an empty dictionary if the team is not found
+
+    return_data = {
+        'total_rank': to_numeric(team_data.get("Total_Rank", 0)),
+        'touchdowns': to_numeric(team_data.get("Total_Opp TDs", 0)),
+        'total_ypg': to_numeric(team_data.get("Total_YPG", 0)),
+        'rush_rank': to_numeric(team_data.get("Rushing_Rank", 0)),
+        'rush_ypg': to_numeric(team_data.get("Rushing_YPG", 0)),
+        'pass_rank': to_numeric(team_data.get("Passing_Rank", 0)),
+        'pass_ypg': to_numeric(team_data.get("Passing_YPG", 0)),
+        'id': team_data.get("id", ""),
+    }
+    return return_data
 
 
 @cache.memoize(timeout=3600)
@@ -189,6 +219,7 @@ def create_scoreboard():
         for game in scoreboard
     ]
 
+
 # Cleans and formats games data
 @cache.memoize(timeout=3600)
 def clean_games(games):
@@ -203,9 +234,11 @@ def clean_games(games):
             'start_date': game['start_date'],
             'day_of_week': game['day_of_week'],
             'home_team': game['home_team'],
+            'home_id': game['home_id'],
+            'away_team': game['away_team'],
+            'away_id': game['away_id'],
             'home_points': game['home_points'],
             'home_line_scores': game['home_line_scores'],
-            'away_team': game['away_team'],
             'away_points': game['away_points'],
             'completed': game['completed']
         }
@@ -214,7 +247,7 @@ def clean_games(games):
 
 
 # Improved function to create labeled comparison rows
-def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color):
+def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color, home_rank, away_rank):
     total_value = home_value + away_value
 
     # Calculate each team's percentage of the total
@@ -229,7 +262,7 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
     # Start with the away team's color and percentage, followed by the home team's
     return html.Div([
         html.Div(description, style={"width": "150px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),  # Stat label
-        html.Span(f"{away_value:.1f}", style={"color": away_color, "width": "50px", "textAlign": "right", "fontSize": "12px", "padding": "5px"}),
+        html.Span(f"{away_value:.1f} ({away_rank})", style={"color": away_color, "width": "50px", "textAlign": "right", "fontSize": "12px", "padding": "5px"}),
         dcc.Graph(
             figure=go.Figure(
                 data=[
@@ -251,9 +284,9 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
                 )
             ),
             config={'displayModeBar': False},
-            style={'height': '15px', 'width': '100%'}
+            style={'height': '25px', 'width': '100%'}
         ),
-        html.Span(f"{home_value:.1f}",
+        html.Span(f"{home_value:.1f} ({home_rank})",
                   style={"color": home_color, "width": "50px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "5px"}),
         html.Div(description, style={"width": "150px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})  # Right-side Stat label
 ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})

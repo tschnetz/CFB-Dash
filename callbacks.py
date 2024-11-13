@@ -5,8 +5,8 @@ from dash import html, Input, Output, MATCH, State, callback_context
 import dash_bootstrap_components as dbc
 from datetime import datetime, date
 from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
-                   create_records, get_records, add_logos, get_lines, get_team_season_stats,
-                   per_game, create_comparison_row, format_time)
+                   create_records, get_records, add_logos, get_lines, get_team_offense_stats,
+                   per_game, create_comparison_row, format_time, get_team_defense_stats)
 
 
 initial_api_call_returned_events = True
@@ -140,8 +140,12 @@ def register_callbacks(app):
         # print("Displaying static items")
         current_games = create_display(selected_week)
         # Convert DataFrame to list of dictionaries
+        sorted_games = sorted(current_games, key=lambda x: (
+            x['completed'] == True,
+            x['completed'] == False,
+        ))
         games_info = []
-        for game in current_games:
+        for game in sorted_games:
             game_id = game['id']
             home_color = game['home_team_color']
             away_color = game['away_team_color']
@@ -303,7 +307,6 @@ def register_callbacks(app):
             print(f"Error updating game data: {e}")
             return dash.no_update, dash.no_update, n_intervals
 
-
     @app.callback(
         Output({'type': 'matchup', 'index': dash.dependencies.ALL}, 'children'),
         [Input({'type': 'game-button', 'index': dash.dependencies.ALL}, 'n_clicks')],
@@ -324,16 +327,29 @@ def register_callbacks(app):
             game_info = next((game for game in games_data if game['id'] == game_id), None)
             if not game_info:
                 return outputs
-
             home_team = game_info['home_team']
+            home_id = game_info['home_id']
             away_team = game_info['away_team']
+            away_id = game_info['away_id']
             games_played_home = game_info['home_total_wins'] + game_info['home_total_losses']
             games_played_away = game_info['away_total_wins'] + game_info['away_total_losses']
-            home_stats_list = get_team_season_stats(home_team)
-            away_stats_list = get_team_season_stats(away_team)
+            home_stats_list = get_team_offense_stats(home_team)
+            away_stats_list = get_team_offense_stats(away_team)
 
-            home_stats = {item['statName']: per_game(item['statValue'], games_played_home) for item in home_stats_list}
-            away_stats = {item['statName']: per_game(item['statValue'], games_played_away) for item in away_stats_list}
+            home_offense_stats = {item['statName']: per_game(item['statValue'], games_played_home) for item in
+                                  home_stats_list}
+            away_offense_stats = {item['statName']: per_game(item['statValue'], games_played_away) for item in
+                                  away_stats_list}
+            home_defense_stats = get_team_defense_stats(home_id)
+            away_defense_stats = get_team_defense_stats(away_id)
+
+            # Check that home_defense_stats and away_defense_stats are indeed dictionaries.
+            if not isinstance(home_defense_stats, dict):
+                raise TypeError(
+                    f"home_defense_stats expected to be a dictionary, got {type(home_defense_stats)} instead.")
+            if not isinstance(away_defense_stats, dict):
+                raise TypeError(
+                    f"away_defense_stats expected to be a dictionary, got {type(away_defense_stats)} instead.")
 
             home_color = game_info['home_team_color']
             away_color = game_info['away_team_color']
@@ -352,18 +368,20 @@ def register_callbacks(app):
 
                     # Offense stats comparison rows
                     html.Div([
-                        create_comparison_row("totalYards", "Total Yards", home_stats.get('totalYards', 0),
-                                              away_stats.get('totalYards', 0), home_color, away_color),
-                        create_comparison_row("netPassingYards", "Passing Yards", home_stats.get('netPassingYards', 0),
-                                              away_stats.get('netPassingYards', 0), home_color, away_color),
-                        create_comparison_row("rushingYards", "Rushing Yards", home_stats.get('rushingYards', 0),
-                                              away_stats.get('rushingYards', 0), home_color, away_color),
-                        create_comparison_row("passingTDs", "Passing TDs", home_stats.get('passingTDs', 0),
-                                              away_stats.get('passingTDs', 0), home_color, away_color),
-                        create_comparison_row("rushingTDs", "Rushing TDs", home_stats.get('rushingTDs', 0),
-                                              away_stats.get('rushingTDs', 0), home_color, away_color),
-                        create_comparison_row("thirdDownEff", "3rd Down %", home_stats.get('thirdDownEff', 0),
-                                              away_stats.get('thirdDownEff', 0), home_color, away_color),
+                        create_comparison_row("totalYards", "Total Yards", home_offense_stats.get('totalYards', 0),
+                                              away_offense_stats.get('totalYards', 0), home_color, away_color, None, None),
+                        create_comparison_row("netPassingYards", "Passing Yards",
+                                              home_offense_stats.get('netPassingYards', 0),
+                                              away_offense_stats.get('netPassingYards', 0), home_color, away_color, None, None  ),
+                        create_comparison_row("rushingYards", "Rushing Yards",
+                                              home_offense_stats.get('rushingYards', 0),
+                                              away_offense_stats.get('rushingYards', 0), home_color, away_color, None, None),
+                        create_comparison_row("passingTDs", "Passing TDs", home_offense_stats.get('passingTDs', 0),
+                                              away_offense_stats.get('passingTDs', 0), home_color, away_color, None, None),
+                        create_comparison_row("rushingTDs", "Rushing TDs", home_offense_stats.get('rushingTDs', 0),
+                                              away_offense_stats.get('rushingTDs', 0), home_color, away_color, None, None),
+                        create_comparison_row("thirdDownEff", "3rd Down %", home_offense_stats.get('thirdDownEff', 0),
+                                              away_offense_stats.get('thirdDownEff', 0), home_color, away_color, None, None),
                     ]),
                 ], style={"marginBottom": "20px"}),
 
@@ -378,16 +396,18 @@ def register_callbacks(app):
 
                     # Defense stats comparison rows
                     html.Div([
-                        create_comparison_row("sacks", "Sacks", home_stats.get('sacks', 0), away_stats.get('sacks', 0),
-                                              home_color, away_color),
-                        create_comparison_row("tackles", "Tackles", home_stats.get('tackles', 0),
-                                              away_stats.get('tackles', 0), home_color, away_color),
-                        create_comparison_row("turnovers", "Turnovers", home_stats.get('turnovers', 0),
-                                              away_stats.get('turnovers', 0), home_color, away_color),
-                        create_comparison_row("interceptions", "Interceptions", home_stats.get('interceptions', 0),
-                                              away_stats.get('interceptions', 0), home_color, away_color),
-                        create_comparison_row("fumblesRecovered", "Fumbles Rec.", home_stats.get('fumblesRecovered', 0),
-                                              away_stats.get('fumblesRecovered', 0), home_color, away_color),
+                        create_comparison_row("total_ypg", "Total Yards", home_defense_stats['total_ypg'],
+                                              away_defense_stats['total_ypg'],
+                                              home_color, away_color, home_defense_stats['total_rank'], away_defense_stats['total_rank']),
+                        create_comparison_row("rush_ypg", "Rushing Yards", home_defense_stats['rush_ypg'],
+                                              away_defense_stats['rush_ypg'], home_color, away_color, home_defense_stats['rush_rank'], away_defense_stats['rush_rank']),
+                        create_comparison_row("pass_ypg", "Passing Yards", home_defense_stats['pass_ypg'],
+                                              away_defense_stats['pass_ypg'], home_color, away_color, home_defense_stats['pass_rank'], away_defense_stats['pass_rank']),
+                        create_comparison_row("touchdowns", "TDs Allowed", home_defense_stats['touchdowns'],
+                                              away_defense_stats['touchdowns'], home_color, away_color, None, None),
+                        create_comparison_row("fumblesRecovered", "Fumbles Rec.",
+                                              home_offense_stats.get('fumblesRecovered', 0),
+                                              away_offense_stats.get('fumblesRecovered', 0), home_color, away_color, None, None),
                     ]),
                 ], style={"marginBottom": "20px"})
             ], style={
@@ -400,4 +420,5 @@ def register_callbacks(app):
             outputs[triggered_button_index] = layout
 
         return outputs
+
 
