@@ -12,6 +12,22 @@ def per_game(stat, games_played):
     return stat / games_played if games_played else 0
 
 
+def format_time(clock):
+    # Split the time string by ":" and convert to integers
+    parts = clock.split(":")
+
+    # Parse minutes and seconds, ignoring hours
+    if len(parts) == 3:
+        minutes, seconds = int(parts[1]), int(parts[2])
+    elif len(parts) == 2:
+        minutes, seconds = int(parts[0]), int(parts[1])
+    else:
+        return clock  # Return as is if format is unexpected
+
+    # Format time as "M:SS" where M is minutes, SS is seconds
+    return f"{minutes}:{seconds:02}"
+
+
 def get_scoreboard():
     querystring = {"classification": "fbs"}
     response = fetch_data_from_api(SCOREBOARD_URL, query_params=querystring)
