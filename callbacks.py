@@ -1,5 +1,4 @@
 import json
-
 import dash
 from dash import html, Input, Output, MATCH, State, callback_context
 import dash_bootstrap_components as dbc

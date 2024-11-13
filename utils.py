@@ -3,13 +3,9 @@ from datetime import datetime
 import pytz
 import plotly.graph_objs as go
 from dash import html, dcc
-from api import fetch_data_from_api
+from api import fetch_data_from_api, load_team_data
 from config import SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL, RECORDS_URL, MEDIA_URL, TEAMSTATS_URL,YEAR
 from cache_config import cache
-
-
-def per_game(stat, games_played):
-    return stat / games_played if games_played else 0
 
 
 def format_time(clock):
@@ -27,6 +23,7 @@ def format_time(clock):
     # Format time as "M:SS" where M is minutes, SS is seconds
     return f"{minutes}:{seconds:02}"
 
+
 def to_numeric(value):
     try:
         if '.' in str(value):
@@ -34,12 +31,6 @@ def to_numeric(value):
         return int(value)
     except (ValueError, TypeError):
         return 0
-
-
-def get_scoreboard():
-    querystring = {"classification": "fbs"}
-    response = fetch_data_from_api(SCOREBOARD_URL, query_params=querystring)
-    return response if response is not None else []
 
 
 @cache.memoize(timeout=3600)
@@ -113,41 +104,40 @@ def get_media(week):
     return []
 
 
-def get_team_stats(type, team):
-    if type == "offense":
-        file_name = 'data/offense_stats.json'
-    else:
-        file_name = 'data/defense_stats.json'
-    with open(file_name, 'r') as file:
-        data = json.load(file)
+def get_scoreboard():
+    querystring = {"classification": "fbs"}
+    response = fetch_data_from_api(SCOREBOARD_URL, query_params=querystring)
+    return response if response is not None else []
 
-    # Find the team's stats in the data
-    team_data = next((entry for entry in data if entry['id'] == team), None)
+
+def get_team_stats(stat_type, team):
+    file_name = 'data/offense_stats.json' if stat_type == "offense" else 'data/defense_stats.json'
+    team_data = load_team_data(file_name, team)
+    DEFAULT_STATS = {
+        'total_rank': 0,
+        'total_ypg': 0,
+        'rush_rank': 0,
+        'rush_ypg': 0,
+        'pass_rank': 0,
+        'pass_ypg': 0,
+        'scoring_avg': 0,
+        'scoring_rank': 0,
+        'id': '',
+    }
     if team_data is None:
-        return {
-            'total_rank': 0,
-            'total_ypg': 0,
-            'rush_rank': 0,
-            'rush_ypg': 0,
-            'pass_rank': 0,
-            'pass_ypg': 0,
-            'scoring_avg': 0,
-            'scoring_rank': 0,
-            'id': team,
-        }  # Return an empty dictionary if the team is not found
+        return DEFAULT_STATS.copy()
 
-    return_data = {
+    return {
         'total_rank': to_numeric(team_data.get("Total_Rank", 0)),
         'total_ypg': to_numeric(team_data.get("Total_YPG", 0)),
         'rush_rank': to_numeric(team_data.get("Rushing_Rank", 0)),
         'rush_ypg': to_numeric(team_data.get("Rushing_YPG", 0)),
         'pass_rank': to_numeric(team_data.get("Passing_Rank", 0)),
         'pass_ypg': to_numeric(team_data.get("Passing_YPG", 0)),
-        'scoring_avg': to_numeric(team_data.get("Scoring_Avg" if type == "defense" else "Scoring_PPG", 0)),
+        'scoring_avg': to_numeric(team_data.get("Scoring_Avg" if stat_type == "defense" else "Scoring_PPG", 0)),
         'scoring_rank': to_numeric(team_data.get("Scoring_Rank", 0)),
         'id': team_data.get("id", ""),
     }
-    return return_data
 
 
 @cache.memoize(timeout=3600)
@@ -171,7 +161,7 @@ def add_logos(games):
     # Filter out the faulty Charlotte logo entry
     valid_team_info = [
         team for team in team_info
-        if team.get('logos') != 'http://a.espncdn.com/i/teamlogos/ncaa/500/3253.png'
+        if team.get('logos') != 'https://a.espncdn.com/i/teamlogos/ncaa/500/3253.png'
     ]
 
     # Create dictionaries for quick lookup by school name
@@ -205,30 +195,6 @@ def add_logos(games):
     return games_with_logos
 
 
-# Creates a scoreboard structure for display
-def create_scoreboard():
-    scoreboard = get_scoreboard()
-    return [
-        {
-            'game_id': game['id'],
-            'home_id': game['homeTeam']['id'],
-            'away_id': game['awayTeam']['id'],
-            'home_team': game['homeTeam']['name'],
-            'away_team': game['awayTeam']['name'],
-            'status': game['status'],
-            'period': game['period'],
-            'clock': game['clock'],
-            'tv': game['tv'],
-            'situation': game.get('situation'),
-            'possession': game['possession'],
-            'home_team_score': game['homeTeam']['points'],
-            'away_team_score': game['awayTeam']['points'],
-            'spread': game['betting']['spread'],
-        }
-        for game in scoreboard
-    ]
-
-
 # Cleans and formats games data
 @cache.memoize(timeout=3600)
 def clean_games(games):
@@ -253,6 +219,30 @@ def clean_games(games):
         }
         cleaned_games.append(cleaned_game)
     return cleaned_games
+
+
+# Creates a scoreboard structure for display
+def create_scoreboard():
+    scoreboard = get_scoreboard()
+    return [
+        {
+            'game_id': game['id'],
+            'home_id': game['homeTeam']['id'],
+            'away_id': game['awayTeam']['id'],
+            'home_team': game['homeTeam']['name'],
+            'away_team': game['awayTeam']['name'],
+            'status': game['status'],
+            'period': game['period'],
+            'clock': game['clock'],
+            'tv': game['tv'],
+            'situation': game.get('situation'),
+            'possession': game['possession'],
+            'home_team_score': game['homeTeam']['points'],
+            'away_team_score': game['awayTeam']['points'],
+            'spread': game['betting']['spread'],
+        }
+        for game in scoreboard
+    ]
 
 
 # Improved function to create labeled comparison rows
