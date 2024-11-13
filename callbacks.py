@@ -52,8 +52,9 @@ def register_callbacks(app):
         return week_options, selected_value
 
 
-    @app.callback(Output('games-data', 'data'),
-                  Input('selected-week', 'data')
+    @app.callback(
+        Output('games-data', 'data'),
+        Input('selected-week', 'data'),
     )
     def create_display(week):
         # Fetch and process the scoreboard data
@@ -181,7 +182,7 @@ def register_callbacks(app):
                                         style={'fontWeight': 'bold'}),
                                 html.H5(quarter_time_display, id={'type': 'quarter-time', 'index': game_id},
                                         style={'fontWeight': 'bold'}),
-                                html.H6(game['spread']) if game['spread'] else "",
+                                html.H6(f"{game['spread']} • O/U {game['over_under']}") if game['spread'] else "",
                                 html.P(f"{game['day_of_week']}, {game['start_date']}", style={'margin': '0', 'padding': '0'}),
                                 html.P(f"{game['outlet']}",
                                        style={'margin': '0', 'padding': '0'}),
@@ -256,10 +257,11 @@ def register_callbacks(app):
 
 
     @app.callback(
-        Output('scores-data', 'data'),
-        Output('in-progress-flag', 'data', allow_duplicate=True),
-        Output('interval-scores', 'n_intervals'),
-        [Input('interval-scores', 'n_intervals'), Input('init-complete', 'data')],
+        [Output('scores-data', 'data'),
+         Output('in-progress-flag', 'data', allow_duplicate=True),
+         Output('interval-scores', 'n_intervals')],
+        [Input('interval-scores', 'n_intervals'),
+         Input('init-complete', 'data')],
         [State('scores-data', 'data')],
         prevent_initial_call=True
     )
