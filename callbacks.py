@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime, date
 from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
                    create_records, get_records, add_logos, get_lines, get_team_stats,
-                   create_comparison_row, format_time)
+                   create_comparison_row, format_time, color_similarity)
 
 
 initial_api_call_returned_events = True
@@ -351,6 +351,8 @@ def register_callbacks(app):
 
             home_color = game_info['home_team_color']
             away_color = game_info['away_team_color']
+            if color_similarity(home_color, away_color):
+                home_color = game_info['home_team_alt_color']
             home_logo = game_info['home_team_logo']
             away_logo = game_info['away_team_logo']
             layout = html.Div([

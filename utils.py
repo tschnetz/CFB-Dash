@@ -33,8 +33,31 @@ def to_numeric(value):
         return 0
 
 
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6 or not all(c in '0123456789abcdefABCDEF' for c in hex_color):
+        raise ValueError(f"Invalid hex color: {hex_color}")
+    return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def color_similarity(color1, color2, threshold=75):
+    rgb1 = hex_to_rgb(color1)
+    rgb2 = hex_to_rgb(color2)
+    # Calculate Euclidean distance between two RGB colors
+    return ((rgb1[0] - rgb2[0]) ** 2 + (rgb1[1] - rgb2[1]) ** 2 + (rgb1[2] - rgb2[2]) ** 2) ** 0.5 < threshold
+
+
 @cache.memoize(timeout=3600)
 def get_logos_colors():
+    # Function to clean and validate hex color
+    def validate_color(color, default="#ffffff"):  # Default to white if color is invalid
+        if not color or not isinstance(color, str):
+            return default
+        color = color.lstrip("#")
+        if len(color) != 6 or not all(c in '0123456789abcdefABCDEF' for c in color):
+            return default
+        return f"#{color}"
+
     with open('data/team_info.json', 'r') as file:
         data_dict = json.load(file)
 
@@ -43,7 +66,8 @@ def get_logos_colors():
             'id': team['id'],
             'school': team['school'],
             'logo': team['logos'][0] if isinstance(team['logos'], list) else team['logos'],
-            'color': team.get('color', "#ffffff")
+            'color': validate_color(team.get('color', "#ffffff")),
+            'alt_color': validate_color(team.get('alternateColor', "#ffffff")),
         }
         for team in data_dict if team.get('logos')
     ]
@@ -176,6 +200,7 @@ def add_logos(games):
         home_team_data = team_data_by_school.get(game['home_team'], {'logo': "N/A", 'color': "#ffffff"})
         home_team_logo = home_team_data['logo']
         home_team_color = home_team_data['color']
+        home_team_alt_color = home_team_data.get('alt_color', "#ffffff")
 
         # Fetch away team logo and color
         away_team_data = team_data_by_school.get(game['away_team'], {'logo': "N/A", 'color': "#ffffff"})
@@ -188,7 +213,8 @@ def add_logos(games):
             'home_team_logo': home_team_logo,
             'away_team_logo': away_team_logo,
             'home_team_color': home_team_color,
-            'away_team_color': away_team_color
+            'away_team_color': away_team_color,
+            'home_team_alt_color': home_team_alt_color,
         }
         games_with_logos.append(game_with_logos)
 
