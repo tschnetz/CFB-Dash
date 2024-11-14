@@ -330,8 +330,9 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
 
     # Generate the visual row
     return html.Div([
-        html.Div(description, style={"width": "150px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),  # Stat label
-        html.Span(f"{away_value:.1f} ({away_rank})", style={"width": "50px", "textAlign": "right", "fontSize": "12px", "padding": "5px"}),
+        html.Div(description, style={"width": "150px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),
+        html.Span(f"{away_value:.1f} ({away_rank})" if away_rank is not None else f"{away_value:.1f}",
+                  style={"width": "125px", "textAlign": "right", "fontSize": "12px", "padding": "3px"}),
         dcc.Graph(
             figure=go.Figure(
                 data=[
@@ -355,8 +356,8 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
             config={'displayModeBar': False},
             style={'height': '25px', 'width': '100%'}
         ),
-        html.Span(f"{home_value:.1f} ({home_rank})",
-                  style={"width": "50px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "5px"}),
+        html.Span(f"{home_value:.1f} ({home_rank})" if home_rank is not None else f"{home_value:.1f}",
+                  style={"width": "125px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "3px"}),
         html.Div(description, style={"width": "150px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})  # Right-side Stat label
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
 
@@ -482,7 +483,7 @@ def display_results(week, game_info):
                     html.Div([
                         create_comparison_row("total_ypg", "Total Yards", int(home_team_stats['totalYards']),
                                               int(away_team_stats['totalYards']),
-                                              home_color, away_color, ' ', ' ', 'offense'),
+                                              home_color, away_color, None, None, 'offense'),
                         create_comparison_row("rush_ypg", "Rushing Yards", int(home_team_stats['rushingYards']),
                                               int(away_team_stats['rushingYards']), home_color, away_color,
                                               int(home_team_stats['rushingAttempts']), int(away_team_stats['rushingAttempts']),
@@ -509,13 +510,13 @@ def display_results(week, game_info):
                     # Defense stats comparison rows
                     html.Div([
                         create_comparison_row("tackles", "Tackles", int(home_team_stats['tackles']),
-                                              int(away_team_stats['tackles']), home_color, away_color, ' ', ' ', 'offense'),
+                                              int(away_team_stats['tackles']), home_color, away_color, None, None, 'offense'),
                         create_comparison_row("sacks", "Sacks", int(home_team_stats['sacks']),
-                                              int(away_team_stats['sacks']), home_color, away_color, ' ', ' ','offense'),
+                                              int(away_team_stats['sacks']), home_color, away_color, None, None,'offense'),
                         create_comparison_row("qb_hurry", "QB Hurries", int(home_team_stats['qbHurries']),
-                                              int(away_team_stats['qbHurries']), home_color, away_color, ' ', ' ','offense'),
+                                              int(away_team_stats['qbHurries']), home_color, away_color, None, None,'offense'),
                         create_comparison_row("turnovers", "Turnovers", int(away_team_stats['turnovers']),
-                                              int(home_team_stats['turnovers']), home_color, away_color, ' ', ' ','offense'),
+                                              int(home_team_stats['turnovers']), home_color, away_color, None, None,'offense'),
                     ]),
                 ], style={"marginBottom": "20px"})
             ], style={
