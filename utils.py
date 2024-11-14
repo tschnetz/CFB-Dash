@@ -2,9 +2,11 @@ import json
 from datetime import datetime
 import pytz
 import plotly.graph_objs as go
+from cfbd.models import game
 from dash import html, dcc
 from api import fetch_data_from_api, load_team_data
-from config import SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL, RECORDS_URL, MEDIA_URL, TEAMSTATS_URL,YEAR
+from config import (SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL,
+                    RECORDS_URL, MEDIA_URL, GAME_STATS_URL, YEAR)
 from cache_config import cache
 
 
@@ -164,6 +166,12 @@ def get_team_stats(stat_type, team):
     }
 
 
+def get_game_stats(week):
+    querystring = {"year": YEAR, "week": week, "classification": "fbs"}
+    response = fetch_data_from_api(GAME_STATS_URL, query_params=querystring)
+    return response if response is not None else []
+
+
 @cache.memoize(timeout=3600)
 def create_records(records):
     return [
@@ -271,6 +279,29 @@ def create_scoreboard():
     ]
 
 
+def create_game_stats(game_id, game_stats):
+    # Find the game in the data by the specified game_id
+    game_data = next((game for game in game_stats if game['id'] == game_id), None)
+    if not game_data:
+        return {"error": "Game not found"}
+
+    # Initialize dictionaries for home and away team stats only
+    home_team_stats = {}
+    away_team_stats = {}
+
+    # Iterate through the teams to separate home and away stats
+    for team in game_data['teams']:
+        # Extract stats into a dictionary with categories as keys
+        team_stats = {stat['category']: stat['stat'] for stat in team['stats']}
+
+        if team['homeAway'] == "home":
+            home_team_stats = team_stats
+        else:
+            away_team_stats = team_stats
+
+    return home_team_stats, away_team_stats
+
+
 # Improved function to create labeled comparison rows
 def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color, home_rank, away_rank, stat_type):
     if stat_type == "defense":
@@ -328,4 +359,170 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
                   style={"width": "50px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "5px"}),
         html.Div(description, style={"width": "150px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})  # Right-side Stat label
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
+
+
+def display_matchup(game_info):
+    home_id = game_info['home_id']
+    away_id = game_info['away_id']
+    home_offense_stats = get_team_stats('offense', home_id)
+    away_offense_stats = get_team_stats('offense', away_id)
+    home_defense_stats = get_team_stats('defense', home_id)
+    away_defense_stats = get_team_stats('defense', away_id)
+
+    # Check that items are indeed dictionaries.
+    if not isinstance(home_defense_stats, dict):
+        raise TypeError(
+            f"home_defense_stats expected to be a dictionary, got {type(home_defense_stats)} instead.")
+    if not isinstance(away_defense_stats, dict):
+        raise TypeError(
+            f"away_defense_stats expected to be a dictionary, got {type(away_defense_stats)} instead.")
+    if not isinstance(home_offense_stats, dict):
+        raise TypeError(
+            f"home_offense_stats expected to be a dictionary, got {type(home_defense_stats)} instead.")
+    if not isinstance(away_offense_stats, dict):
+        raise TypeError(
+            f"away_offense_stats expected to be a dictionary, got {type(away_defense_stats)} instead.")
+
+    home_color = game_info['home_team_color']
+    away_color = game_info['away_team_color']
+    if color_similarity(home_color, away_color):
+        home_color = game_info['home_team_alt_color']
+    home_logo = game_info['home_team_logo']
+    away_logo = game_info['away_team_logo']
+    layout = html.Div([
+        # Offense Section with centered logos
+        html.Div([
+            html.Div([
+                html.Img(src=away_logo, height="40px"),
+                html.H3("Offense (Per Game)",
+                        style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
+                html.Img(src=home_logo, height="40px")
+            ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
+
+            # Offense stats comparison rows
+            html.Div([
+                create_comparison_row("total_ypg", "Total Yards", home_offense_stats['total_ypg'],
+                                      away_offense_stats['total_ypg'],
+                                      home_color, away_color, home_offense_stats['total_rank'],
+                                      away_offense_stats['total_rank'], 'offense'),
+                create_comparison_row("rush_ypg", "Rushing Yards", home_offense_stats['rush_ypg'],
+                                      away_offense_stats['rush_ypg'], home_color, away_color,
+                                      home_offense_stats['rush_rank'], away_offense_stats['rush_rank'], 'offense'),
+                create_comparison_row("pass_ypg", "Passing Yards", home_offense_stats['pass_ypg'],
+                                      away_offense_stats['pass_ypg'], home_color, away_color,
+                                      home_offense_stats['pass_rank'], away_offense_stats['pass_rank'], 'offense'),
+                create_comparison_row("scoring_avg", "Scoring Avg", home_offense_stats['scoring_avg'],
+                                      away_offense_stats['scoring_avg'], home_color, away_color,
+                                      home_offense_stats['scoring_rank'], away_offense_stats['scoring_rank'],
+                                      'offense'),
+            ]),
+        ], style={"marginBottom": "20px"}),
+
+        # Defense Section with centered logos
+        html.Div([
+            html.Div([
+                html.Img(src=away_logo, height="40px"),
+                html.H3("Defense (Per Game)",
+                        style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
+                html.Img(src=home_logo, height="40px")
+            ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
+
+            # Defense stats comparison rows
+            html.Div([
+                create_comparison_row("total_ypg", "Total Yards", home_defense_stats['total_ypg'],
+                                      away_defense_stats['total_ypg'],
+                                      home_color, away_color, home_defense_stats['total_rank'],
+                                      away_defense_stats['total_rank'], 'defense'),
+                create_comparison_row("rush_ypg", "Rushing Yards", home_defense_stats['rush_ypg'],
+                                      away_defense_stats['rush_ypg'], home_color, away_color,
+                                      home_defense_stats['rush_rank'], away_defense_stats['rush_rank'], 'defense'),
+                create_comparison_row("pass_ypg", "Passing Yards", home_defense_stats['pass_ypg'],
+                                      away_defense_stats['pass_ypg'], home_color, away_color,
+                                      home_defense_stats['pass_rank'], away_defense_stats['pass_rank'], 'defense'),
+                create_comparison_row("scoring_avg", "Scoring Avg", home_defense_stats['scoring_avg'],
+                                      away_defense_stats['scoring_avg'], home_color, away_color,
+                                      home_defense_stats['scoring_rank'], away_defense_stats['scoring_rank'],
+                                      'defense'),
+            ]),
+        ], style={"marginBottom": "20px"})
+    ], style={
+        "backgroundColor": "rgba(255, 255, 255, 0.8)",
+        "borderRadius": "8px",
+        "padding": "15px",
+        "boxShadow": "0px 4px 8px rgba(0, 0, 0, 0.2)"
+    })
+    return layout
+
+
+def display_results(week, game_info):
+    game_stats = get_game_stats(week)
+    game_id = game_info['id']
+    away_id = game_info['away_id']
+    home_id = game_info['home_id']
+    home_color = game_info['home_team_color']
+    away_color = game_info['away_team_color']
+    if color_similarity(home_color, away_color):
+        home_color = game_info['home_team_alt_color']
+    home_logo = game_info['home_team_logo']
+    away_logo = game_info['away_team_logo']
+    for game in game_stats:
+        if game['id'] == game_id:
+            home_team_stats, away_team_stats = create_game_stats(game_id, game_stats)
+            layout = html.Div([
+                # Offense Section with centered logos
+                html.Div([
+                    html.Div([
+                        html.Img(src=away_logo, height="40px"),
+                        html.H3("Offense Results",
+                                style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
+                        html.Img(src=home_logo, height="40px")
+                    ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
+
+                    # Offense stats comparison rows
+                    html.Div([
+                        create_comparison_row("total_ypg", "Total Yards", int(home_team_stats['totalYards']),
+                                              int(away_team_stats['totalYards']),
+                                              home_color, away_color, ' ', ' ', 'offense'),
+                        create_comparison_row("rush_ypg", "Rushing Yards", int(home_team_stats['rushingYards']),
+                                              int(away_team_stats['rushingYards']), home_color, away_color,
+                                              int(home_team_stats['rushingAttempts']), int(away_team_stats['rushingAttempts']),
+                                              'offense'),
+                        create_comparison_row("pass_ypg", "Passing Yards", int(home_team_stats['netPassingYards']),
+                                              int(away_team_stats['netPassingYards']), home_color, away_color,
+                                              home_team_stats['completionAttempts'], away_team_stats['completionAttempts'],
+                                              'offense'),
+                        create_comparison_row("first_downs", "First Downs", int(home_team_stats['firstDowns']),
+                                              int(away_team_stats['firstDowns']), home_color, away_color,
+                                              home_team_stats['possessionTime'], away_team_stats['possessionTime'], 'offense'),
+                    ]),
+                ], style={"marginBottom": "20px"}),
+
+                # Defense Section with centered logos
+                html.Div([
+                    html.Div([
+                        html.Img(src=away_logo, height="40px"),
+                        html.H3("Defense Results",
+                                style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
+                        html.Img(src=home_logo, height="40px")
+                    ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
+
+                    # Defense stats comparison rows
+                    html.Div([
+                        create_comparison_row("tackles", "Tackles", int(home_team_stats['tackles']),
+                                              int(away_team_stats['tackles']), home_color, away_color, ' ', ' ', 'offense'),
+                        create_comparison_row("sacks", "Sacks", int(home_team_stats['sacks']),
+                                              int(away_team_stats['sacks']), home_color, away_color, ' ', ' ','offense'),
+                        create_comparison_row("qb_hurry", "QB Hurries", int(home_team_stats['qbHurries']),
+                                              int(away_team_stats['qbHurries']), home_color, away_color, ' ', ' ','offense'),
+                        create_comparison_row("turnovers", "Turnovers", int(away_team_stats['turnovers']),
+                                              int(home_team_stats['turnovers']), home_color, away_color, ' ', ' ','offense'),
+                    ]),
+                ], style={"marginBottom": "20px"})
+            ], style={
+                "backgroundColor": "rgba(255, 255, 255, 0.8)",
+                "borderRadius": "8px",
+                "padding": "15px",
+                "boxShadow": "0px 4px 8px rgba(0, 0, 0, 0.2)"
+            })
+            return layout
 

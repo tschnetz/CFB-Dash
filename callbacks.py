@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime, date
 from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
                    create_records, get_records, add_logos, get_lines, get_team_stats,
-                   create_comparison_row, format_time, color_similarity)
+                   create_comparison_row, format_time, color_similarity, display_matchup, display_results)
 
 
 initial_api_call_returned_events = True
@@ -309,11 +309,12 @@ def register_callbacks(app):
 
     @app.callback(
         Output({'type': 'matchup', 'index': dash.dependencies.ALL}, 'children'),
-        [Input({'type': 'game-button', 'index': dash.dependencies.ALL}, 'n_clicks')],
+        [Input({'type': 'game-button', 'index': dash.dependencies.ALL}, 'n_clicks'),
+         Input('week-selector', 'value')],
         [State('games-data', 'data'),
          State({'type': 'game-button', 'index': dash.dependencies.ALL}, 'id')],
     )
-    def display_game_matchup(n_clicks_list, games_data, button_ids):
+    def display_game_detail(n_clicks_list, week, games_data, button_ids):
         outputs = [[] for _ in n_clicks_list]
         ctx = callback_context
         if not ctx.triggered:
@@ -327,90 +328,11 @@ def register_callbacks(app):
             game_info = next((game for game in games_data if game['id'] == game_id), None)
             if not game_info:
                 return outputs
-            home_id = game_info['home_id']
-            away_id = game_info['away_id']
+            if game_info['completed']:
+                layout = display_results(week, game_info)
+            else:
+                layout = display_matchup(game_info)
 
-            home_offense_stats = get_team_stats('offense', home_id)
-            away_offense_stats = get_team_stats('offense', away_id)
-            home_defense_stats = get_team_stats('defense', home_id)
-            away_defense_stats = get_team_stats('defense', away_id)
-
-            # Check that items are indeed dictionaries.
-            if not isinstance(home_defense_stats, dict):
-                raise TypeError(
-                    f"home_defense_stats expected to be a dictionary, got {type(home_defense_stats)} instead.")
-            if not isinstance(away_defense_stats, dict):
-                raise TypeError(
-                    f"away_defense_stats expected to be a dictionary, got {type(away_defense_stats)} instead.")
-            if not isinstance(home_offense_stats, dict):
-                raise TypeError(
-                    f"home_offense_stats expected to be a dictionary, got {type(home_defense_stats)} instead.")
-            if not isinstance(away_offense_stats, dict):
-                raise TypeError(
-                    f"away_offense_stats expected to be a dictionary, got {type(away_defense_stats)} instead.")
-
-            home_color = game_info['home_team_color']
-            away_color = game_info['away_team_color']
-            if color_similarity(home_color, away_color):
-                home_color = game_info['home_team_alt_color']
-            home_logo = game_info['home_team_logo']
-            away_logo = game_info['away_team_logo']
-            layout = html.Div([
-                # Offense Section with centered logos
-                html.Div([
-                    html.Div([
-                        html.Img(src=away_logo, height="40px"),
-                        html.H3("Offense (Per Game)",
-                                style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
-                        html.Img(src=home_logo, height="40px")
-                    ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
-
-                    # Offense stats comparison rows
-                    html.Div([
-                        create_comparison_row("total_ypg", "Total Yards", home_offense_stats['total_ypg'],
-                                              away_offense_stats['total_ypg'],
-                                              home_color, away_color, home_offense_stats['total_rank'],
-                                              away_offense_stats['total_rank'], 'offense'),
-                        create_comparison_row("rush_ypg", "Rushing Yards", home_offense_stats['rush_ypg'],
-                                              away_offense_stats['rush_ypg'], home_color, away_color,
-                                              home_offense_stats['rush_rank'], away_offense_stats['rush_rank'], 'offense'),
-                        create_comparison_row("pass_ypg", "Passing Yards", home_offense_stats['pass_ypg'],
-                                              away_offense_stats['pass_ypg'], home_color, away_color,
-                                              home_offense_stats['pass_rank'], away_offense_stats['pass_rank'], 'offense'),
-                        create_comparison_row("scoring_avg", "Scoring Avg", home_offense_stats['scoring_avg'],
-                                              away_offense_stats['scoring_avg'], home_color, away_color,
-                                              home_offense_stats['scoring_rank'], away_offense_stats['scoring_rank'], 'offense'),
-                    ]),
-                ], style={"marginBottom": "20px"}),
-
-                # Defense Section with centered logos
-                html.Div([
-                    html.Div([
-                        html.Img(src=away_logo, height="40px"),
-                        html.H3("Defense (Per Game)",
-                                style={"textAlign": "center", "fontSize": "14px", "fontWeight": "bold"}),
-                        html.Img(src=home_logo, height="40px")
-                    ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}),
-
-                    # Defense stats comparison rows
-                    html.Div([
-                        create_comparison_row("total_ypg", "Total Yards", home_defense_stats['total_ypg'],
-                                              away_defense_stats['total_ypg'],
-                                              home_color, away_color, home_defense_stats['total_rank'], away_defense_stats['total_rank'], 'defense'),
-                        create_comparison_row("rush_ypg", "Rushing Yards", home_defense_stats['rush_ypg'],
-                                              away_defense_stats['rush_ypg'], home_color, away_color, home_defense_stats['rush_rank'], away_defense_stats['rush_rank'], 'defense'),
-                        create_comparison_row("pass_ypg", "Passing Yards", home_defense_stats['pass_ypg'],
-                                              away_defense_stats['pass_ypg'], home_color, away_color, home_defense_stats['pass_rank'], away_defense_stats['pass_rank'], 'defense'),
-                        create_comparison_row("scoring_avg", "Scoring Avg", home_defense_stats['scoring_avg'],
-                                              away_defense_stats['scoring_avg'], home_color, away_color, home_defense_stats['scoring_rank'], away_defense_stats['scoring_rank'], 'defense'),
-                    ]),
-                ], style={"marginBottom": "20px"})
-            ], style={
-                "backgroundColor": "rgba(255, 255, 255, 0.8)",
-                "borderRadius": "8px",
-                "padding": "15px",
-                "boxShadow": "0px 4px 8px rgba(0, 0, 0, 0.2)"
-            })
 
             outputs[triggered_button_index] = layout
 

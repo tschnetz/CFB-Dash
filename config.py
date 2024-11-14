@@ -1,5 +1,7 @@
 import cfbd
 import os
+
+from cfbd.models.team_stat_stat_value import TEAMSTATSTATVALUE_ANY_OF_SCHEMAS
 from dotenv import load_dotenv
 
 # Only load from .env if running locally
@@ -19,4 +21,5 @@ ODDS_URL = "https://api.collegefootballdata.com/lines"
 RECORDS_URL = f'https://api.collegefootballdata.com/records'
 SCHEDULE_URL = "https://api.collegefootballdata.com/calendar"
 SCOREBOARD_URL = "https://api.collegefootballdata.com/scoreboard"
-TEAMSTATS_URL = "https://api.collegefootballdata.com/stats/season"
+TEAM_STATS_URL = "https://api.collegefootballdata.com/stats/season"
+GAME_STATS_URL = "https://api.collegefootballdata.com/games/teams"
