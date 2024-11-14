@@ -35748,42 +35748,6 @@
         "twitter": null
     },
     {
-        "id": 3253,
-        "school": "Charlotte",
-        "mascot": "Saints",
-        "abbreviation": "COLLE",
-        "alternateNames": [
-            "COLLE",
-            "Faith NC"
-        ],
-        "color": "#null",
-        "alternateColor": "#null",
-        "logos": [
-            "http://a.espncdn.com/i/teamlogos/ncaa/500/3253.png",
-            "http://a.espncdn.com/i/teamlogos/ncaa/500-dark/3253.png"
-        ],
-        "location": {
-            "id": null,
-            "name": null,
-            "city": null,
-            "state": null,
-            "zip": null,
-            "countryCode": null,
-            "timezone": null,
-            "latitude": null,
-            "longitude": null,
-            "elevation": null,
-            "capacity": null,
-            "constructionYear": null,
-            "grass": null,
-            "dome": null
-        },
-        "conference": null,
-        "division": null,
-        "classification": null,
-        "twitter": null
-    },
-    {
         "id": 1000912,
         "school": "Concordia Canada",
         "mascot": "Eagles",

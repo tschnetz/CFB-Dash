@@ -327,6 +327,7 @@ def register_callbacks(app):
 
         if n_clicks_list[triggered_button_index] % 2 == 1:
             game_info = next((game for game in games_data if game['id'] == game_id), None)
+            print(f"Game info: {game_info}")
             if not game_info:
                 return outputs
             if game_info['completed']:

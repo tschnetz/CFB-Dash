@@ -66,6 +66,7 @@ def get_logos_colors():
         {
             'id': team['id'],
             'school': team['school'],
+            'mascot': team['mascot'],
             'logo': team['logos'][0] if isinstance(team['logos'], list) else team['logos'],
             'color': validate_color(team.get('color', "#ffffff")),
             'alt_color': validate_color(team.get('alternateColor', "#ffffff")),
@@ -189,34 +190,34 @@ def create_records(records):
 @cache.memoize(timeout=3600)
 def add_logos(games):
     team_info = get_logos_colors()
-    # Filter out the faulty Charlotte logo entry
-    valid_team_info = [
-        team for team in team_info
-        if team.get('logos') != 'https://a.espncdn.com/i/teamlogos/ncaa/500/3253.png'
-    ]
+
 
     # Create dictionaries for quick lookup by school name
     team_data_by_school = {
-        team['school']: {'logo': team['logo'], 'color': team.get('color', "#ffffff"), 'alt_color': team.get('alt_color', "#ffffff")}
-        for team in valid_team_info
+        team['school']: {'mascot': team['mascot'], 'logo': team['logo'], 'color': team.get('color', "#ffffff"), 'alt_color': team.get('alt_color', "#ffffff")}
+        for team in team_info
     }
 
     games_with_logos = []
     for game in games:
         # Fetch home team logo and color
-        home_team_data = team_data_by_school.get(game['home_team'], {'logo': "N/A", 'color': "#ffffff"})
+        home_team_data = team_data_by_school.get(game['home_team'], {'mascot': 'N/A', 'logo': "N/A", 'color': "#ffffff"})
+        home_team_mascot = home_team_data['mascot']
         home_team_logo = home_team_data['logo']
         home_team_color = home_team_data['color']
         home_team_alt_color = home_team_data['alt_color']
 
         # Fetch away team logo and color
-        away_team_data = team_data_by_school.get(game['away_team'], {'logo': "N/A", 'color': "#ffffff"})
+        away_team_data = team_data_by_school.get(game['away_team'], {'mascot': 'N/A', 'logo': "N/A", 'color': "#ffffff"})
+        away_team_mascot = away_team_data['mascot']
         away_team_logo = away_team_data['logo']
         away_team_color = away_team_data['color']
 
         # Combine game data with logos and colors
         game_with_logos = {
             **game,
+            'home_team_mascot': home_team_mascot,
+            'away_team_mascot': away_team_mascot,
             'home_team_logo': home_team_logo,
             'away_team_logo': away_team_logo,
             'home_team_color': home_team_color,
@@ -384,93 +385,6 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
 
 
-def display_boxscore(game_id, game_info):
-    data = get_games()
-    # Initialize the dictionary to hold line scores for each game
-    linescores_dict = {}
-    # Loop through each game in the data
-    for game in data:
-        game_id_loop = game["id"]  # Renamed to avoid collision with function parameter
-        # Extract line scores and points for home and away teams
-        away_line_scores = game.get("away_line_scores", [])
-        home_line_scores = game.get("home_line_scores", [])
-        away_points = game.get("away_points", 0)
-        home_points = game.get("home_points", 0)
-        # Create the dictionary entry for the current game
-        linescores_dict[game_id_loop] = {
-            "away_team": game["away_team"],
-            "home_team": game["home_team"],
-            "away_line_scores": away_line_scores,
-            "home_line_scores": home_line_scores,
-            "away_points": away_points,
-            "home_points": home_points
-        }
-
-    if game_id not in linescores_dict:
-        return html.Div("Game ID not found.")  # Provide a user-friendly message
-
-    max_quarters = max(len(linescores_dict[game_id].get('home_line_scores', [])),
-                       len(linescores_dict[game_id].get('away_line_scores', [])))
-
-    # Generate the header dynamically based on the number of quarters
-    quarter_headers = []
-    for i in range(max_quarters):
-        if i < 4:  # Standard quarters Q1 to Q4
-            quarter_headers.append(html.Th(f"Q{i + 1}", style={'textAlign': 'center', 'textDecoration': 'underline'}))
-        else:  # Any quarters beyond Q4 will be labeled numerically as OT1, OT2, etc.
-            quarter_headers.append(html.Th(f"OT{i - 3}", style={'textAlign': 'center', 'textDecoration': 'underline'}))
-
-    header_row = html.Tr([
-        html.Th("", style={'textDecoration': 'underline'}),  # Empty cell with underline
-        html.Th("", style={'textDecoration': 'underline'}),  # Empty cell with underline
-        *quarter_headers,
-        html.Th("Total", style={'textAlign': 'center', 'textDecoration': 'underline'})
-    ])
-
-    team_rows = []
-    home_team = game_info['home_team']
-    away_team = game_info['away_team']
-    home_color = game_info['home_team_color']
-    away_color = game_info['away_team_color']
-    home_logo = game_info['home_team_logo']
-    away_logo = game_info['away_team_logo']
-    away_score = linescores_dict[game_id]['away_points']
-    home_score = linescores_dict[game_id]['home_points']
-
-    # Generate the score cells dynamically based on the number of quarters
-    away_score_cells = [html.Td(str(score), style={'textAlign': 'center'}) for score in
-                        linescores_dict[game_id]['away_line_scores']]
-    home_score_cells = [html.Td(str(score), style={'textAlign': 'center'}) for score in
-                        linescores_dict[game_id]['home_line_scores']]
-
-    # Assemble the row for each team
-    away_team_row = html.Tr([
-        html.Td(html.Img(src=away_logo, height="50px", style={'marginLeft': '10px'})),
-        html.Td(away_team, style={'fontWeight': 'bold', 'font-size': '14'}),
-        *away_score_cells,
-        html.Td(str(away_score), style={'fontWeight': 'bold', 'textAlign': 'center'})
-    ])
-    team_rows.append(away_team_row)
-
-    home_team_row = html.Tr([
-        html.Td(html.Img(src=home_logo, height="50px", style={'marginLeft': '10px'})),
-        html.Td(home_team, style={'fontWeight': 'bold', 'font-size': '14'}),
-        *home_score_cells,
-        html.Td(str(home_score), style={'fontWeight': 'bold', 'textAlign': 'center'})
-    ])
-    team_rows.append(home_team_row)
-
-    # Return the completed table with dynamic headers and rows
-    return html.Table([
-        html.Thead(header_row),
-        html.Tbody(team_rows)
-    ], className="section-container", style={
-        'width': '50%',  # Specific width for the boxscore section
-        'marginLeft': 'auto',  # Center-align the narrower boxscore
-        'marginRight': 'auto'
-    })
-
-
 def display_matchup(game_info):
     home_id = game_info['home_id']
     away_id = game_info['away_id']
@@ -636,3 +550,93 @@ def display_results(week, game_info):
             })
             return layout
 
+
+def display_boxscore(game_id, game_info):
+    data = get_games()
+    boxscores = create_linescores(data)
+
+    if game_id not in boxscores:
+        return html.Div("Game ID not found.")  # Provide a user-friendly message
+
+    max_quarters = max(len(boxscores[game_id].get('home_line_scores', [])),
+                       len(boxscores[game_id].get('away_line_scores', [])))
+    header_row = create_header_row(max_quarters)
+    team_rows = create_team_rows(game_id, game_info, boxscores)
+
+    return html.Table([
+        html.Thead(header_row),
+        html.Tbody(team_rows)
+    ],
+        className="section-container",
+        style={
+            'width': '50%',  # Specific width for the boxscore section
+            'marginLeft': 'auto',  # Center-align the narrower boxscore
+            'marginRight': 'auto'
+        })
+
+
+def create_linescores(data):
+    linescores = {}
+    for game in data:
+        game_id_loop = game["id"]
+        linescores[game_id_loop] = {
+            "away_team": game["away_team"],
+            "home_team": game["home_team"],
+            "away_line_scores": game.get("away_line_scores", []),
+            "home_line_scores": game.get("home_line_scores", []),
+            "away_points": game.get("away_points", 0),
+            "home_points": game.get("home_points", 0)
+        }
+    return linescores
+
+
+def create_header_row(max_quarters):
+    quarter_headers = generate_quarter_headers(max_quarters)
+    header_style = {'textDecoration': 'underline'}
+    header_cells = [
+        html.Th("", style=header_style),  # Empty cell with underline
+        html.Th("", style=header_style),  # Empty cell with underline
+        *quarter_headers,
+        html.Th("Total", style={'textAlign': 'center', **header_style})
+    ]
+    return html.Tr(header_cells)
+
+
+def generate_quarter_headers(max_quarters):
+    return [
+        html.Th(f"Q{i + 1}" if i < 4 else f"OT{i - 3}",
+                style={'textAlign': 'center', 'textDecoration': 'underline'})
+        for i in range(max_quarters)
+    ]
+
+
+def create_team_rows(game_id, game_info, boxscores):
+    home_team = game_info['home_team']
+    away_team = game_info['away_team']
+    home_logo = game_info['home_team_logo']
+    away_logo = game_info['away_team_logo']
+    home_mascot = game_info['home_team_mascot']
+    away_mascot = game_info['away_team_mascot']
+    away_score = boxscores[game_id]['away_points']
+    home_score = boxscores[game_id]['home_points']
+
+    score_cells_away = generate_score_cells(boxscores[game_id]['away_line_scores'])
+    score_cells_home = generate_score_cells(boxscores[game_id]['home_line_scores'])
+
+    away_team_row = create_team_row(away_logo, away_team, away_mascot, score_cells_away, away_score)
+    home_team_row = create_team_row(home_logo, home_team, home_mascot, score_cells_home, home_score)
+
+    return [away_team_row, home_team_row]
+
+
+def generate_score_cells(line_scores):
+    return [html.Td(str(score), style={'textAlign': 'center'}) for score in line_scores]
+
+
+def create_team_row(team_logo, team_name, team_mascot, score_cells, total_score):
+    return html.Tr([
+        html.Td(html.Img(src=team_logo, height="50px", style={'marginLeft': '10px'})),
+        html.Td(f"{team_name} {team_mascot}", style={'fontWeight': 'bold', 'font-size': '14'}),
+        *score_cells,
+        html.Td(str(total_score), style={'fontWeight': 'bold', 'textAlign': 'center'})
+    ])
