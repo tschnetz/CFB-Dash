@@ -415,6 +415,8 @@ def display_matchup(game_info):
     layout = html.Div([
         # Offense Section with centered logos
         html.Div([
+            html.H3("Matchup",
+                    style={"textAlign": "center", "fontSize": "18px", "fontWeight": "bold"}),
             html.Div([
                 html.Img(src=away_logo, height="40px"),
                 html.H3("Offense (Per Game)",
