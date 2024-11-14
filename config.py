@@ -1,7 +1,5 @@
-import cfbd
 import os
 
-from cfbd.models.team_stat_stat_value import TEAMSTATSTATVALUE_ANY_OF_SCHEMAS
 from dotenv import load_dotenv
 
 # Only load from .env if running locally
@@ -13,7 +11,6 @@ HEADERS = {
     'accept': 'application/json',
     'Authorization': f'Bearer {API_KEY}'
 }
-# CONFIG = cfbd.Configuration(access_token=API_KEY)
 YEAR = '2024'
 GAMES_URL = "https://api.collegefootballdata.com/games"
 MEDIA_URL = "https://api.collegefootballdata.com/games/media"

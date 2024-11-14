@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 import pytz
 import plotly.graph_objs as go
-from cfbd.models import game
 from dash import html, dcc
 from api import fetch_data_from_api, load_team_data
 from config import (SCHEDULE_URL, SCOREBOARD_URL, GAMES_URL, ODDS_URL,
