@@ -4,7 +4,7 @@ from dash import html, Input, Output, MATCH, State, callback_context
 import dash_bootstrap_components as dbc
 from datetime import datetime, date
 from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
-                   create_records, get_records, add_logos, get_lines, get_team_stats,
+                   create_records, get_records, create_home_away_teams, get_lines, get_team_stats,
                    create_comparison_row, format_time, color_similarity, display_matchup, display_results,
                    display_boxscore)
 
@@ -58,16 +58,15 @@ def register_callbacks(app):
     )
     def create_display(week):
         # Fetch and process the scoreboard data
-        # print(f"Creating display for week {week}")
         games = get_games(week)
         schedule = clean_games(games)  # Clean and format game data
-        games_with_logos = add_logos(schedule)  # Add team logos
+        games_with_teams = create_home_away_teams(schedule)  # Add team logos
         media_data = get_media(week)  # Add media outlet information
         betting_lines = get_lines(week)  # Add betting info
 
         # Join betting lines to games by 'id'
         games_with_betting = []
-        for game in games_with_logos:
+        for game in games_with_teams:
             betting_info = next((bet for bet in betting_lines if bet['id'] == game['id']), None)
             game_with_betting = {**game}
             if betting_info:
@@ -315,7 +314,7 @@ def register_callbacks(app):
         [State('games-data', 'data'),
          State({'type': 'game-button', 'index': dash.dependencies.ALL}, 'id')],
     )
-    def display_game_detail(n_clicks_list, week, games_data, button_ids):
+    def display_recap_or_matchup(n_clicks_list, week, games_data, button_ids):
         outputs = [[] for _ in n_clicks_list]
         ctx = callback_context
         if not ctx.triggered:
@@ -327,7 +326,6 @@ def register_callbacks(app):
 
         if n_clicks_list[triggered_button_index] % 2 == 1:
             game_info = next((game for game in games_data if game['id'] == game_id), None)
-            print(f"Game info: {game_info}")
             if not game_info:
                 return outputs
             if game_info['completed']:

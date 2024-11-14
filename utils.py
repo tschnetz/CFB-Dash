@@ -188,9 +188,8 @@ def create_records(records):
 
 # Merges games data with logos and colors
 @cache.memoize(timeout=3600)
-def add_logos(games):
+def create_home_away_teams(games):
     team_info = get_logos_colors()
-
 
     # Create dictionaries for quick lookup by school name
     team_data_by_school = {
@@ -303,8 +302,8 @@ def create_game_stats(game_id, game_stats):
 
 
 # Improved function to create labeled comparison rows
-def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color, home_rank, away_rank,
-                          stat_type):
+def create_comparison_row(stat_name, description, home_value, away_value,
+                          home_color, away_color, home_rank, away_rank, stat_type):
     # Convert possession time to seconds if stat_name is "possession"
     if stat_name == "possession":
         # Keep the original time format for display
@@ -551,6 +550,7 @@ def display_results(week, game_info):
             return layout
 
 
+# Boxscore Functions
 def display_boxscore(game_id, game_info):
     data = get_games()
     boxscores = create_linescores(data)
@@ -573,8 +573,6 @@ def display_boxscore(game_id, game_info):
             'marginLeft': 'auto',  # Center-align the narrower boxscore
             'marginRight': 'auto'
         })
-
-
 def create_linescores(data):
     linescores = {}
     for game in data:
@@ -588,8 +586,6 @@ def create_linescores(data):
             "home_points": game.get("home_points", 0)
         }
     return linescores
-
-
 def create_header_row(max_quarters):
     quarter_headers = generate_quarter_headers(max_quarters)
     header_style = {'textDecoration': 'underline'}
@@ -600,16 +596,12 @@ def create_header_row(max_quarters):
         html.Th("Total", style={'textAlign': 'center', **header_style})
     ]
     return html.Tr(header_cells)
-
-
 def generate_quarter_headers(max_quarters):
     return [
         html.Th(f"Q{i + 1}" if i < 4 else f"OT{i - 3}",
                 style={'textAlign': 'center', 'textDecoration': 'underline'})
         for i in range(max_quarters)
     ]
-
-
 def create_team_rows(game_id, game_info, boxscores):
     home_team = game_info['home_team']
     away_team = game_info['away_team']
@@ -627,12 +619,8 @@ def create_team_rows(game_id, game_info, boxscores):
     home_team_row = create_team_row(home_logo, home_team, home_mascot, score_cells_home, home_score)
 
     return [away_team_row, home_team_row]
-
-
 def generate_score_cells(line_scores):
     return [html.Td(str(score), style={'textAlign': 'center'}) for score in line_scores]
-
-
 def create_team_row(team_logo, team_name, team_mascot, score_cells, total_score):
     return html.Tr([
         html.Td(html.Img(src=team_logo, height="50px", style={'marginLeft': '10px'})),
