@@ -40,7 +40,7 @@ def hex_to_rgb(hex_color):
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def color_similarity(color1, color2, threshold=75):
+def color_similarity(color1, color2, threshold=100):
     rgb1 = hex_to_rgb(color1)
     rgb2 = hex_to_rgb(color2)
     # Calculate Euclidean distance between two RGB colors
@@ -190,7 +190,7 @@ def add_logos(games):
 
     # Create dictionaries for quick lookup by school name
     team_data_by_school = {
-        team['school']: {'logo': team['logo'], 'color': team.get('color', "#ffffff")}
+        team['school']: {'logo': team['logo'], 'color': team.get('color', "#ffffff"), 'alt_color': team.get('alt_color', "#ffffff")}
         for team in valid_team_info
     }
 
@@ -200,7 +200,7 @@ def add_logos(games):
         home_team_data = team_data_by_school.get(game['home_team'], {'logo': "N/A", 'color': "#ffffff"})
         home_team_logo = home_team_data['logo']
         home_team_color = home_team_data['color']
-        home_team_alt_color = home_team_data.get('alt_color', "#ffffff")
+        home_team_alt_color = home_team_data['alt_color']
 
         # Fetch away team logo and color
         away_team_data = team_data_by_school.get(game['away_team'], {'logo': "N/A", 'color': "#ffffff"})
