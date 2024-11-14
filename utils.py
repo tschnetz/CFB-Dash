@@ -302,7 +302,28 @@ def create_game_stats(game_id, game_stats):
 
 
 # Improved function to create labeled comparison rows
-def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color, home_rank, away_rank, stat_type):
+def create_comparison_row(stat_name, description, home_value, away_value, home_color, away_color, home_rank, away_rank,
+                          stat_type):
+    # Convert possession time to seconds if stat_name is "possession"
+    if stat_name == "possession":
+        # Keep the original time format for display
+        home_display_value = home_value
+        away_display_value = away_value
+
+        # Convert possession time (mm:ss) to seconds
+        home_seconds = int(home_value.split(":")[0]) * 60 + int(home_value.split(":")[1])
+        away_seconds = int(away_value.split(":")[0]) * 60 + int(away_value.split(":")[1])
+
+        # Assign converted values for percentage calculation
+        home_value = home_seconds
+        away_value = away_seconds
+
+    else:
+        # If not "possession", the display values remain the same
+        home_display_value = home_value
+        away_display_value = away_value
+
+    # Calculate percentages based on the stat type
     if stat_type == "defense":
         # For defense stats, where lower values are better, invert the percentages
         if home_value > 0 and away_value > 0:
@@ -329,19 +350,19 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
 
     # Generate the visual row
     return html.Div([
-        html.Div(description, style={"width": "150px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),
-        html.Span(f"{away_value:.1f} ({away_rank})" if away_rank is not None else f"{away_value:.1f}",
+        html.Div(description, style={"width": "175px", "textAlign": "left", "fontSize": "12px", "fontWeight": "bold"}),
+        html.Span(f"{away_display_value} ({away_rank})" if away_rank is not None else f"{away_display_value}",
                   style={"width": "125px", "textAlign": "right", "fontSize": "12px", "padding": "3px"}),
         dcc.Graph(
             figure=go.Figure(
                 data=[
                     go.Bar(
                         x=[away_percentage], orientation='h', marker_color=away_color, showlegend=False,
-                        name=f"{away_value:.1f}"
+                        name=str(away_display_value)
                     ),
                     go.Bar(
                         x=[home_percentage], orientation='h', marker_color=home_color, showlegend=False,
-                        name=f"{home_value:.1f}"
+                        name=str(home_display_value)
                     )
                 ],
                 layout=go.Layout(
@@ -355,9 +376,11 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
             config={'displayModeBar': False},
             style={'height': '25px', 'width': '100%'}
         ),
-        html.Span(f"{home_value:.1f} ({home_rank})" if home_rank is not None else f"{home_value:.1f}",
-                  style={"width": "125px", "textAlign": "left", "float": "right", "fontSize": "12px", "padding": "3px"}),
-        html.Div(description, style={"width": "150px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})  # Right-side Stat label
+        html.Span(f"{home_display_value} ({home_rank})" if home_rank is not None else f"{home_display_value}",
+                  style={"width": "125px", "textAlign": "left", "float": "right", "fontSize": "12px",
+                         "padding": "3px"}),
+        html.Div(description, style={"width": "175px", "textAlign": "right", "fontSize": "12px", "fontWeight": "bold"})
+        # Right-side Stat label
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
 
 
@@ -491,9 +514,9 @@ def display_results(week, game_info):
                                               int(away_team_stats['netPassingYards']), home_color, away_color,
                                               home_team_stats['completionAttempts'], away_team_stats['completionAttempts'],
                                               'offense'),
-                        create_comparison_row("first_downs", "First Downs", int(home_team_stats['firstDowns']),
-                                              int(away_team_stats['firstDowns']), home_color, away_color,
-                                              home_team_stats['possessionTime'], away_team_stats['possessionTime'], 'offense'),
+                        create_comparison_row("possession", "Possession Time", home_team_stats['possessionTime'],
+                                              away_team_stats['possessionTime'], home_color, away_color,
+                                              None, None, 'offense'),
                     ]),
                 ], style={"marginBottom": "20px"}),
 
