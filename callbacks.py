@@ -5,7 +5,8 @@ import dash_bootstrap_components as dbc
 from datetime import datetime, date
 from utils import (create_scoreboard, get_schedule, get_games, clean_games, get_media,
                    create_records, get_records, add_logos, get_lines, get_team_stats,
-                   create_comparison_row, format_time, color_similarity, display_matchup, display_results)
+                   create_comparison_row, format_time, color_similarity, display_matchup, display_results,
+                   display_boxscore)
 
 
 initial_api_call_returned_events = True
@@ -329,7 +330,9 @@ def register_callbacks(app):
             if not game_info:
                 return outputs
             if game_info['completed']:
-                layout = display_results(week, game_info)
+                boxscore = display_boxscore(game_id, game_info)
+                results = display_results(week, game_info)
+                layout = html.Div([boxscore, results])
             else:
                 layout = display_matchup(game_info)
 

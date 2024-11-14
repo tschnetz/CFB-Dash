@@ -384,6 +384,93 @@ def create_comparison_row(stat_name, description, home_value, away_value, home_c
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
 
 
+def display_boxscore(game_id, game_info):
+    data = get_games()
+    # Initialize the dictionary to hold line scores for each game
+    linescores_dict = {}
+    # Loop through each game in the data
+    for game in data:
+        game_id_loop = game["id"]  # Renamed to avoid collision with function parameter
+        # Extract line scores and points for home and away teams
+        away_line_scores = game.get("away_line_scores", [])
+        home_line_scores = game.get("home_line_scores", [])
+        away_points = game.get("away_points", 0)
+        home_points = game.get("home_points", 0)
+        # Create the dictionary entry for the current game
+        linescores_dict[game_id_loop] = {
+            "away_team": game["away_team"],
+            "home_team": game["home_team"],
+            "away_line_scores": away_line_scores,
+            "home_line_scores": home_line_scores,
+            "away_points": away_points,
+            "home_points": home_points
+        }
+
+    if game_id not in linescores_dict:
+        return html.Div("Game ID not found.")  # Provide a user-friendly message
+
+    max_quarters = max(len(linescores_dict[game_id].get('home_line_scores', [])),
+                       len(linescores_dict[game_id].get('away_line_scores', [])))
+
+    # Generate the header dynamically based on the number of quarters
+    quarter_headers = []
+    for i in range(max_quarters):
+        if i < 4:  # Standard quarters Q1 to Q4
+            quarter_headers.append(html.Th(f"Q{i + 1}", style={'textAlign': 'center', 'textDecoration': 'underline'}))
+        else:  # Any quarters beyond Q4 will be labeled numerically as OT1, OT2, etc.
+            quarter_headers.append(html.Th(f"OT{i - 3}", style={'textAlign': 'center', 'textDecoration': 'underline'}))
+
+    header_row = html.Tr([
+        html.Th("", style={'textDecoration': 'underline'}),  # Empty cell with underline
+        html.Th("", style={'textDecoration': 'underline'}),  # Empty cell with underline
+        *quarter_headers,
+        html.Th("Total", style={'textAlign': 'center', 'textDecoration': 'underline'})
+    ])
+
+    team_rows = []
+    home_team = game_info['home_team']
+    away_team = game_info['away_team']
+    home_color = game_info['home_team_color']
+    away_color = game_info['away_team_color']
+    home_logo = game_info['home_team_logo']
+    away_logo = game_info['away_team_logo']
+    away_score = linescores_dict[game_id]['away_points']
+    home_score = linescores_dict[game_id]['home_points']
+
+    # Generate the score cells dynamically based on the number of quarters
+    away_score_cells = [html.Td(str(score), style={'textAlign': 'center'}) for score in
+                        linescores_dict[game_id]['away_line_scores']]
+    home_score_cells = [html.Td(str(score), style={'textAlign': 'center'}) for score in
+                        linescores_dict[game_id]['home_line_scores']]
+
+    # Assemble the row for each team
+    away_team_row = html.Tr([
+        html.Td(html.Img(src=away_logo, height="50px", style={'marginLeft': '10px'})),
+        html.Td(away_team, style={'fontWeight': 'bold', 'font-size': '14'}),
+        *away_score_cells,
+        html.Td(str(away_score), style={'fontWeight': 'bold', 'textAlign': 'center'})
+    ])
+    team_rows.append(away_team_row)
+
+    home_team_row = html.Tr([
+        html.Td(html.Img(src=home_logo, height="50px", style={'marginLeft': '10px'})),
+        html.Td(home_team, style={'fontWeight': 'bold', 'font-size': '14'}),
+        *home_score_cells,
+        html.Td(str(home_score), style={'fontWeight': 'bold', 'textAlign': 'center'})
+    ])
+    team_rows.append(home_team_row)
+
+    # Return the completed table with dynamic headers and rows
+    return html.Table([
+        html.Thead(header_row),
+        html.Tbody(team_rows)
+    ], className="section-container", style={
+        'width': '50%',  # Specific width for the boxscore section
+        'marginLeft': 'auto',  # Center-align the narrower boxscore
+        'marginRight': 'auto'
+    })
+
+
 def display_matchup(game_info):
     home_id = game_info['home_id']
     away_id = game_info['away_id']
